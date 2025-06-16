@@ -1,5 +1,5 @@
-streamlit>=1.32.0
-openai>=1.10.0
-gtts==2.3.2
-pydub==0.25.1
-git+https://github.com/stefanrmmr/streamlit_audio_recorder.git
+streamlit
+streamlit-audio-recorder
+openai
+gtts
+
