@@ -1,4 +1,0 @@
-[compatibility]
-# Python version to use for the app
-# Options: "3.8", "3.9", "3.10", "3.11", "3.12" (check Streamlit Cloud documentation for latest supported versions)
-python_version = "3.12"
