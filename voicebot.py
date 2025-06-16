@@ -13,14 +13,16 @@ from gtts import gTTS
 # 음원 파일 재생을 위한 패키지 추가
 import base64
 
+# audiorecorder가 반환하는 오디오의 샘플 레이트 (일반적으로 44100Hz)
+# audiorecorder 라이브러리의 내부 동작에 따라 다를 수 있으니, 필요시 확인 및 수정
+AUDIO_SAMPLE_RATE = 44100 
+
 ##### 기능 구현 함수 #####
-def STT(audio):
-    # audiorecorder 객체는 이미 녹음 데이터를 포함하고 있으므로, 바로 export() 가능
+def STT(audio_segment_object): # audio는 이제 AudioSegment 객체임을 가정
     # 파일 저장
     filename='input.mp3'
-    # audio.export().read()를 사용하여 bytes 객체를 얻어 파일에 쓴다.
-    with open(filename, "wb") as f:
-        f.write(audio.export().read())
+    # AudioSegment 객체의 export 메소드를 사용하여 파일로 저장
+    audio_segment_object.export(filename, format="mp3")
 
     # 음원 파일 열기
     audio_file = open(filename, "rb")
@@ -121,11 +123,17 @@ def main():
         audio = audiorecorder("클릭하여 녹음하기", "녹음중...")
 
         # audiorecorder가 반환한 audio 객체가 유효하고 (None이 아니고)
+        # duration_seconds 속성이 있으며 (numpy.ndarray가 아닐 때),
         # 녹음 길이가 0보다 크며 (실제 소리가 녹음됨)
         # 이 녹음이 아직 처리되지 않았다면 (중복 처리 방지)
-        if audio is not None and audio.duration_seconds > 0 and not st.session_state["audio_processed_for_response"]:
+        if (audio is not None and 
+            hasattr(audio, 'duration_seconds') and # duration_seconds 속성 존재 여부 확인
+            audio.duration_seconds > 0 and 
+            not st.session_state["audio_processed_for_response"]):
+            
             # 음성 재생
-            st.audio(audio.tobytes()) # audiorecorder 객체에서 직접 바이트 데이터 추출
+            # audiorecorder 객체 자체를 st.audio에 전달
+            st.audio(audio.export().read(), format="audio/wav") 
 
             # 음원 파일에서 텍스트 추출
             question = STT(audio)
@@ -163,6 +171,7 @@ def main():
                 st.session_state["audio_processed_for_response"] = False
                 st.rerun() # 답변 생성 후 채팅창 업데이트를 위해 rerun
 
+
             # 채팅 형식으로 시각화 하기 (항상 최신 채팅 기록을 보여줌)
             for sender, time, message in st.session_state["chat"]:
                 if sender == "user":
@@ -172,8 +181,7 @@ def main():
                     st.write(f'<div style="display:flex;align-items:center;justify-content:flex-end;"><div style="background-color:lightgray;border-radius:12px;padding:8px 12px;margin-left:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
                     st.write("")
                     # 봇의 답변이 표시될 때만 TTS 실행 (가장 최근 봇 응답일 때만 재생)
-                    # 현재 표시되는 메시지가 st.session_state["chat"] 리스트의 마지막 요소와 동일한지 확인
-                    if st.session_state["chat"] and st.session_state["chat"][-1] == (sender, time, message):
+                    if st.session_state["chat"] and st.session_state["chat"][-1] == ("bot", time, message):
                          TTS(message)
 
 if __name__=="__main__":
