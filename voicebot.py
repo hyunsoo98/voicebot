@@ -2,7 +2,7 @@
 import streamlit as st
 # audiorecorder 패키지 추가
 from audiorecorder import audiorecorder
-# OpenAI 패키기 추가
+# OpenAI 패키지 추가
 import openai
 # 파일 삭제를 위한 패키지 추가
 import os
@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 # 오디오 array 비교를 위한 numpy 패키지 추가
 import numpy as np
-# TTS 패키기 추가
+# TTS 패키지 추가
 from gtts import gTTS
 # 음원파일 재생을 위한 패키지 추가
 import base64
@@ -85,11 +85,12 @@ def main():
     # 기본 설명
     with st.expander("음성비서 프로그램에 관하여", expanded=True):
         st.write(
-        """     
+        """
         - 음성비서 프로그램의 UI는 스트림릿을 활용했습니다.
         - STT(Speech-To-Text)는 OpenAI의 Whisper AI를 활용했습니다. 
         - 답변은 OpenAI의 GPT 모델을 활용했습니다. 
         - TTS(Text-To-Speech)는 구글의 Google Translate TTS를 활용했습니다.
+        - 그만 고치게 해줘
         """
         )
 
