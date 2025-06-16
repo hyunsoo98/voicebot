@@ -120,9 +120,9 @@ def main():
         # 음성 녹음 아이콘 추가
         audio = audiorecorder("클릭하여 녹음하기", "녹음중...")
 
-        # 리셋 버튼이 눌리지 않았고, audio 객체가 존재하며, 녹음 길이가 0보다 클 때만 처리
-        # audiorecorder 객체의 duration_seconds 속성을 사용하여 빈 녹음 확인
-        if audio is not None and audio.duration_seconds > 0 and not st.session_state["check_reset"]:
+        # 리셋 버튼이 눌리지 않았고, audio 객체가 존재하며, duration_seconds 속성이 있고, 녹음 길이가 0보다 클 때만 처리
+        # hasattr()을 추가하여 audio.duration_seconds 접근 전에 속성 존재 여부 확인
+        if audio is not None and hasattr(audio, 'duration_seconds') and audio.duration_seconds > 0 and not st.session_state["check_reset"]:
             # 음성 재생
             st.audio(audio.export().read())
             # 음원 파일에서 텍스트 추출
@@ -172,8 +172,9 @@ def main():
                 else:
                     st.write(f'<div style="display:flex;align-items:center;justify-content:flex-end;"><div style="background-color:lightgray;border-radius:12px;padding:8px 12px;margin-left:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
                     st.write("")
-                    # 봇의 답변이 표시될 때만 TTS 실행 (마지막 메시지가 봇의 메시지인 경우에만 재생)
-                    if st.session_state["chat"][-1] == (sender, time, message): # 현재 표시되는 메시지가 가장 최근 봇 응답일 때만 재생
+                    # 봇의 답변이 표시될 때만 TTS 실행 (가장 최근 봇 응답일 때만 재생)
+                    # 여기서는 chat 리스트의 마지막 요소가 현재 순회 중인 메시지와 동일한 경우를 확인
+                    if st.session_state["chat"] and st.session_state["chat"][-1] == ("bot", time, message):
                          TTS(message)
 
 if __name__=="__main__":
