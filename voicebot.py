@@ -81,7 +81,7 @@ def main():
     st.markdown("---")
 
     # 기본 설명
-    with st.expander("jyoon's 음성비서 프로그램에 관하여", expanded=True):
+    with st.expander(" 음성비서 프로그램에 관하여", expanded=True):
         st.write(
         """
         - 음성비서 프로그램의 UI는 스트림릿을 활용했습니다.
