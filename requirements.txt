@@ -63,6 +63,8 @@ grpcio-status==1.72.0rc1
 gTTS==2.5.4
 h11
 h5py==3.13.0
+# htmlmin==0.1.12  # 이 줄은 제거하거나 아래처럼 수정 (Python 3.13과 호환되는 버전으로)
+htmlmin
 httpcore
 httpx
 huggingface-hub==0.33.0
@@ -123,6 +125,8 @@ networkx==3.4.2
 notebook
 notebook_shim
 numba==0.61.0
+# numpy==1.26.0  # 이 줄을 아래처럼 변경
+numpy
 omegaconf==2.3.0
 openai==1.86.0
 openpyxl==3.1.5
@@ -176,7 +180,8 @@ pytorch-lightning==2.5.1.post0
 pytorch-metric-learning==2.8.1
 pytz==2025.2
 PyWavelets==1.8.0
-pywinpty
+# pywin32==308  # Windows 전용이므로 Linux 환경에서는 제거
+# pywinpty  # pywin32와 관련된 패키지일 가능성이 높으므로 함께 제거를 고려
 PyYAML
 pyzmq
 referencing
@@ -216,14 +221,19 @@ stack-data
 statistics==1.0.3.5
 statsmodels==0.14.4
 streamlit==1.45.1
-streamlit-audiorecorder==0.0.6
+# audiorecorder-streamlit 또는 streamlit_audio_recorder의 정확한 PyPI 이름이나 최신 버전 확인 후 수정
+# 현재 로컬 git 설치는 권장하지 않음
+# 만약 꼭 필요하다면, voicebot.py 에서 import audiorecorder -> import streamlit_audio_recorder 로 변경해야 함
+# 또한, `git+https://github.com/stefanrmmr/streamlit_audio_recorder.git` 대신 `streamlit-audio-recorder` (PyPI에 있다면) 사용
+streamlit-audio-recorder # 또는 streamlit-audiorecoder 또는 streamlit-audiorec 등 PyPI에 맞는 정확한 이름
 sympy==1.13.3
 tabulate==0.9.0
 tenacity==9.1.2
 tensorboard==2.19.0
 tensorboard-data-server==0.7.2
 tensorboardX==2.6.4
-tensorflow==2.19.0
+# tensorflow==2.19.0 # 이 줄을 아래처럼 변경
+tensorflow
 termcolor==3.1.0
 terminado
 threadpoolctl==3.6.0
