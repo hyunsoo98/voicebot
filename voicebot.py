@@ -2,31 +2,30 @@
 import streamlit as st
 # audiorecorder 패키지 추가
 from audiorecorder import audiorecorder
-# OpenAI 패키지 추가
+# OpenAI 패키기 추가
 import openai
 # 파일 삭제를 위한 패키지 추가
 import os
-# 시간 정보를 위한 패키지 추가
+# 시간 정보를 위핸 패키지 추가
 from datetime import datetime
-# TTS 패키지 추가
+# 오디오 array 비교를 위한 numpy 패키지 추가
+import numpy as np
+# TTS 패키기 추가
 from gtts import gTTS
-# 음원 파일 재생을 위한 패키지 추가
+# 음원파일 재생을 위한 패키지 추가
 import base64
 
-# audiorecorder가 반환하는 오디오의 샘플 레이트 (일반적으로 44100Hz)
-# audiorecorder 라이브러리의 내부 동작에 따라 다를 수 있으니, 필요시 확인 및 수정
-AUDIO_SAMPLE_RATE = 44100 
-
 ##### 기능 구현 함수 #####
-def STT(audio_segment_object): # audio는 이제 AudioSegment 객체임을 가정
+def STT(audio):
     # 파일 저장
     filename='input.mp3'
-    # AudioSegment 객체의 export 메소드를 사용하여 파일로 저장
-    audio_segment_object.export(filename, format="mp3")
+    wav_file = open(filename, "wb")
+    wav_file.write(audio.tobytes())
+    wav_file.close()
 
     # 음원 파일 열기
     audio_file = open(filename, "rb")
-    # Whisper 모델을 활용해 텍스트 얻기
+    #Whisper 모델을 활용해 텍스트 얻기
     transcript = openai.Audio.transcribe("whisper-1", audio_file)
     audio_file.close()
     # 파일 삭제
@@ -44,7 +43,7 @@ def TTS(response):
     tts = gTTS(text=response,lang="ko")
     tts.save(filename)
 
-    # 음원 파일 자동 재생
+    # 음원 파일 자동 재성
     with open(filename, "rb") as f:
         data = f.read()
         b64 = base64.b64encode(data).decode()
@@ -64,6 +63,8 @@ def main():
         page_title="음성 비서 프로그램",
         layout="wide")
 
+    flag_start = False
+
     # session state 초기화
     if "chat" not in st.session_state:
         st.session_state["chat"] = []
@@ -71,22 +72,23 @@ def main():
     if "messages" not in st.session_state:
         st.session_state["messages"] = [{"role": "system", "content": "You are a thoughtful assistant. Respond to all input in 25 words and answer in korea"}]
 
-    # 녹음이 성공적으로 처리되어 답변을 받아야 할 때를 위한 플래그
-    if "audio_processed_for_response" not in st.session_state:
-        st.session_state["audio_processed_for_response"] = False
+    if "check_audio" not in st.session_state:
+        st.session_state["check_audio"] = []
 
-    # 제목
+
+
+    # 제목 
     st.header("음성 비서 프로그램")
     # 구분선
     st.markdown("---")
 
     # 기본 설명
-    with st.expander(" 음성비서 프로그램에 관하여", expanded=True):
+    with st.expander("음성비서 프로그램에 관하여", expanded=True):
         st.write(
-        """
+        """     
         - 음성비서 프로그램의 UI는 스트림릿을 활용했습니다.
-        - STT(Speech-To-Text)는 OpenAI의 Whisper AI를 활용했습니다.
-        - 답변은 OpenAI의 GPT 모델을 활용했습니다.
+        - STT(Speech-To-Text)는 OpenAI의 Whisper AI를 활용했습니다. 
+        - 답변은 OpenAI의 GPT 모델을 활용했습니다. 
         - TTS(Text-To-Speech)는 구글의 Google Translate TTS를 활용했습니다.
         """
         )
@@ -108,71 +110,48 @@ def main():
 
         # 리셋 버튼 생성
         if st.button(label="초기화"):
-            # 리셋 코드
+            # 리셋 코드 
             st.session_state["chat"] = []
             st.session_state["messages"] = [{"role": "system", "content": "You are a thoughtful assistant. Respond to all input in 25 words and answer in korea"}]
-            st.session_state["audio_processed_for_response"] = False # 리셋 시 플래그 초기화
-            st.rerun() # 상태를 즉시 반영하기 위해 rerun
 
     # 기능 구현 공간
-    col1, col2 = st.columns(2)
+    col1, col2 =  st.columns(2)
     with col1:
         # 왼쪽 영역 작성
         st.subheader("질문하기")
         # 음성 녹음 아이콘 추가
         audio = audiorecorder("클릭하여 녹음하기", "녹음중...")
-
-        # audiorecorder가 반환한 audio 객체가 유효하고 (None이 아니고)
-        # duration_seconds 속성이 있으며 (numpy.ndarray가 아닐 때),
-        # 녹음 길이가 0보다 크며 (실제 소리가 녹음됨)
-        # 이 녹음이 아직 처리되지 않았다면 (중복 처리 방지)
-        if (audio is not None and 
-            hasattr(audio, 'duration_seconds') and # duration_seconds 속성 존재 여부 확인
-            audio.duration_seconds > 0 and 
-            not st.session_state["audio_processed_for_response"]):
-            
-            # 음성 재생
-            # audiorecorder 객체 자체를 st.audio에 전달
-            st.audio(audio.export().read(), format="audio/wav") 
+        if len(audio) > 0 and not np.array_equal(audio,st.session_state["check_audio"]):
+            # 음성 재생 
+            st.audio(audio.tobytes())
 
             # 음원 파일에서 텍스트 추출
             question = STT(audio)
 
             # 채팅을 시각화하기 위해 질문 내용 저장
             now = datetime.now().strftime("%H:%M")
-            st.session_state["chat"].append(("user",now, question))
+            st.session_state["chat"] = st.session_state["chat"]+ [("user",now, question)]
             # GPT 모델에 넣을 프롬프트를 위해 질문 내용 저장
-            st.session_state["messages"].append({"role": "user", "content": question})
-
-            # 오디오 처리가 완료되었음을 표시 (답변 생성을 위해)
-            st.session_state["audio_processed_for_response"] = True
-            st.rerun() # 질문 처리 후 바로 답변을 위해 rerun
+            st.session_state["messages"] = st.session_state["messages"]+ [{"role": "user", "content": question}]
+            # audio 버퍼 확인을 위해 현 시점 오디오 정보 저장
+            st.session_state["check_audio"] = audio
+            flag_start =True
 
     with col2:
         # 오른쪽 영역 작성
         st.subheader("질문/답변")
+        if flag_start:
+            #ChatGPT에게 답변 얻기
+            response = ask_gpt(st.session_state["messages"], model)
 
-        # 채팅 기록이 있을 때만 시각화
-        if st.session_state["chat"]:
-            # 마지막 오디오가 처리되었고, 마지막 메시지가 사용자의 질문인 경우에만 답변 생성
-            if st.session_state["audio_processed_for_response"] and st.session_state["chat"][-1][0] == "user":
-                with st.spinner("GPT가 답변을 생성중입니다..."):
-                    # ChatGPT에게 답변 얻기
-                    response = ask_gpt(st.session_state["messages"], model)
+            # GPT 모델에 넣을 프롬프트를 위해 답변 내용 저장
+            st.session_state["messages"] = st.session_state["messages"]+ [{"role": "system", "content": response}]
 
-                # GPT 모델에 넣을 프롬프트를 위해 답변 내용 저장
-                st.session_state["messages"].append({"role": "system", "content": response})
+            # 채팅 시각화를 위한 답변 내용 저장
+            now = datetime.now().strftime("%H:%M")
+            st.session_state["chat"] = st.session_state["chat"]+ [("bot",now, response)]
 
-                # 채팅 시각화를 위한 답변 내용 저장
-                now = datetime.now().strftime("%H:%M")
-                st.session_state["chat"].append(("bot",now, response))
-
-                # 답변이 생성되었으므로, 다음 녹음을 위해 플래그 초기화
-                st.session_state["audio_processed_for_response"] = False
-                st.rerun() # 답변 생성 후 채팅창 업데이트를 위해 rerun
-
-
-            # 채팅 형식으로 시각화 하기 (항상 최신 채팅 기록을 보여줌)
+            # 채팅 형식으로 시각화 하기
             for sender, time, message in st.session_state["chat"]:
                 if sender == "user":
                     st.write(f'<div style="display:flex;align-items:center;"><div style="background-color:#007AFF;color:white;border-radius:12px;padding:8px 12px;margin-right:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
@@ -180,9 +159,9 @@ def main():
                 else:
                     st.write(f'<div style="display:flex;align-items:center;justify-content:flex-end;"><div style="background-color:lightgray;border-radius:12px;padding:8px 12px;margin-left:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
                     st.write("")
-                    # 봇의 답변이 표시될 때만 TTS 실행 (가장 최근 봇 응답일 때만 재생)
-                    if st.session_state["chat"] and st.session_state["chat"][-1] == ("bot", time, message):
-                         TTS(message)
+            
+            # gTTS 를 활용하여 음성 파일 생성 및 재생
+            TTS(response)
 
 if __name__=="__main__":
     main()
