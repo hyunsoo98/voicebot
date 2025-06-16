@@ -107,13 +107,16 @@ def main():
             st.session_state["check_reset"] = True
             
     # 기능 구현 공간
-    col1, col2 =  st.columns(2)
+    col1, col2 = st.columns(2)
     with col1:
         # 왼쪽 영역 작성
         st.subheader("질문하기")
         # 음성 녹음 아이콘 추가
         audio = audiorecorder("클릭하여 녹음하기", "녹음중...")
-        if (audio.duration_seconds > 0) and (st.session_state["check_reset"]==False):
+        
+        # audio 객체가 유효하고 duration_seconds 속성이 있는지 확인
+        # 그리고 리셋 버튼이 눌리지 않았을 때만 처리
+        if audio is not None and hasattr(audio, 'duration_seconds') and (audio.duration_seconds > 0) and (st.session_state["check_reset"]==False):
             # 음성 재생 
             st.audio(audio.export().read())
             # 음원 파일에서 텍스트 추출
@@ -124,11 +127,14 @@ def main():
             st.session_state["chat"] = st.session_state["chat"]+ [("user",now, question)]
             # GPT 모델에 넣을 프롬프트를 위해 질문 내용 저장
             st.session_state["messages"] = st.session_state["messages"]+ [{"role": "user", "content": question}]
+        elif st.session_state["check_reset"] == True: # 리셋 버튼이 눌렸을 때만 check_reset을 다시 False로 설정
+            st.session_state["check_reset"] = False # 리셋 후에는 다시 새로운 녹음을 받을 수 있도록 설정
 
     with col2:
         # 오른쪽 영역 작성
         st.subheader("질문/답변")
-        if  (audio.duration_seconds > 0)  and (st.session_state["check_reset"]==False):
+        # 여기서도 audio 객체의 유효성을 다시 확인
+        if audio is not None and hasattr(audio, 'duration_seconds') and (audio.duration_seconds > 0) and (st.session_state["check_reset"]==False):
             # ChatGPT에게 답변 얻기
             response = ask_gpt(st.session_state["messages"], model)
 
@@ -150,9 +156,8 @@ def main():
             
             # gTTS 를 활용하여 음성 파일 생성 및 재생
             TTS(response)
-        else:
-            st.session_state["check_reset"] = False
+        # else: 이 부분은 삭제하거나 로직을 변경하여, 녹음이 없거나 유효하지 않을 때도 채팅 기록을 표시하도록 할 수 있습니다.
+        # 현재 코드에서는 녹음이 없으면 우측 컬럼에 아무것도 표시되지 않습니다.
 
 if __name__=="__main__":
     main()
-
