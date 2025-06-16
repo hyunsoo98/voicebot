@@ -1,5 +1,5 @@
-streamlit==1.45.1
-openai==1.86.0
-gtts==2.5.4
-pydub==0.25.1
-st_audiorec==0.1.0
+streamlit
+openai
+gtts
+pydub
+git+https://github.com/stefanrmmr/streamlit-audiorecorder.git
