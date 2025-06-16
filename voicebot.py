@@ -68,7 +68,7 @@ def main():
     if "check_reset" not in st.session_state:
         st.session_state["check_reset"] = False
 
-    # 제목 
+    # 제목
     st.header("음성 비서 프로그램")
     # 구분선
     st.markdown("---")
@@ -76,10 +76,10 @@ def main():
     # 기본 설명
     with st.expander("음성비서 프로그램에 관하여", expanded=True):
         st.write(
-        """     
+        """
         - 음성비서 프로그램의 UI는 스트림릿을 활용했습니다.
-        - STT(Speech-To-Text)는 OpenAI의 Whisper AI를 활용했습니다. 
-        - 답변은 OpenAI의 GPT 모델을 활용했습니다. 
+        - STT(Speech-To-Text)는 OpenAI의 Whisper AI를 활용했습니다.
+        - 답변은 OpenAI의 GPT 모델을 활용했습니다.
         - TTS(Text-To-Speech)는 구글의 Google Translate TTS를 활용했습니다.
         """
         )
@@ -101,11 +101,12 @@ def main():
 
         # 리셋 버튼 생성
         if st.button(label="초기화"):
-            # 리셋 코드 
+            # 리셋 코드
             st.session_state["chat"] = []
             st.session_state["messages"] = [{"role": "system", "content": "You are a thoughtful assistant. Respond to all input in 25 words and answer in korea"}]
-            st.session_state["check_reset"] = True
-            
+            st.session_state["check_reset"] = True # 리셋 버튼 클릭 시 True로 설정
+            st.rerun() # 상태를 즉시 반영하기 위해 rerum
+
     # 기능 구현 공간
     col1, col2 = st.columns(2)
     with col1:
@@ -113,39 +114,52 @@ def main():
         st.subheader("질문하기")
         # 음성 녹음 아이콘 추가
         audio = audiorecorder("클릭하여 녹음하기", "녹음중...")
-        
-        # audio 객체가 유효하고 duration_seconds 속성이 있는지 확인
-        # 그리고 리셋 버튼이 눌리지 않았을 때만 처리
-        if audio is not None and hasattr(audio, 'duration_seconds') and (audio.duration_seconds > 0) and (st.session_state["check_reset"]==False):
-            # 음성 재생 
+
+        # 리셋 버튼이 눌리지 않았고, audio 객체가 유효하며 녹음 길이가 0보다 클 때만 처리
+        if audio and len(audio) > 0 and not st.session_state["check_reset"]:
+            # 음성 재생
             st.audio(audio.export().read())
             # 음원 파일에서 텍스트 추출
             question = STT(audio)
 
             # 채팅을 시각화하기 위해 질문 내용 저장
             now = datetime.now().strftime("%H:%M")
-            st.session_state["chat"] = st.session_state["chat"]+ [("user",now, question)]
+            st.session_state["chat"].append(("user",now, question))
             # GPT 모델에 넣을 프롬프트를 위해 질문 내용 저장
-            st.session_state["messages"] = st.session_state["messages"]+ [{"role": "user", "content": question}]
-        elif st.session_state["check_reset"] == True: # 리셋 버튼이 눌렸을 때만 check_reset을 다시 False로 설정
-            st.session_state["check_reset"] = False # 리셋 후에는 다시 새로운 녹음을 받을 수 있도록 설정
+            st.session_state["messages"].append({"role": "user", "content": question})
+
+            st.session_state["last_audio_processed"] = True # 음성이 성공적으로 처리되었음을 표시
+            st.rerun() # 질문 처리 후 바로 답변을 위해 rerun
+        elif st.session_state["check_reset"]: # 리셋 버튼이 눌렸을 때
+            st.session_state["check_reset"] = False # 리셋 상태 해제
+            st.session_state["last_audio_processed"] = False # 마지막 오디오 처리 상태 초기화
+            # st.rerun()은 이미 리셋 버튼 클릭 시 호출했으므로 여기서는 생략
 
     with col2:
         # 오른쪽 영역 작성
         st.subheader("질문/답변")
-        # 여기서도 audio 객체의 유효성을 다시 확인
-        if audio is not None and hasattr(audio, 'duration_seconds') and (audio.duration_seconds > 0) and (st.session_state["check_reset"]==False):
-            # ChatGPT에게 답변 얻기
-            response = ask_gpt(st.session_state["messages"], model)
 
-            # GPT 모델에 넣을 프롬프트를 위해 답변 내용 저장
-            st.session_state["messages"] = st.session_state["messages"]+ [{"role": "system", "content": response}]
+        # 채팅 기록이 있을 때만 시각화
+        if st.session_state["chat"]:
+            # 마지막 질문이 사용자 질문이고, 아직 답변이 없으며, 마지막 오디오가 처리되었다면 답변 생성
+            # audio 객체의 유효성은 이미 col1에서 확인했으므로, 여기서는 세션 상태에 의존
+            if st.session_state["last_audio_processed"] and st.session_state["chat"][-1][0] == "user":
+                with st.spinner("GPT가 답변을 생성중입니다..."):
+                    # ChatGPT에게 답변 얻기
+                    response = ask_gpt(st.session_state["messages"], model)
 
-            # 채팅 시각화를 위한 답변 내용 저장
-            now = datetime.now().strftime("%H:%M")
-            st.session_state["chat"] = st.session_state["chat"]+ [("bot",now, response)]
+                # GPT 모델에 넣을 프롬프트를 위해 답변 내용 저장
+                st.session_state["messages"].append({"role": "system", "content": response})
 
-            # 채팅 형식으로 시각화 하기
+                # 채팅 시각화를 위한 답변 내용 저장
+                now = datetime.now().strftime("%H:%M")
+                st.session_state["chat"].append(("bot",now, response))
+
+                st.session_state["last_audio_processed"] = False # 답변이 생성되었으므로 초기화
+                st.rerun() # 답변 생성 후 채팅창 업데이트를 위해 rerun
+
+
+            # 채팅 형식으로 시각화 하기 (항상 최신 채팅 기록을 보여줌)
             for sender, time, message in st.session_state["chat"]:
                 if sender == "user":
                     st.write(f'<div style="display:flex;align-items:center;"><div style="background-color:#007AFF;color:white;border-radius:12px;padding:8px 12px;margin-right:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
@@ -153,11 +167,8 @@ def main():
                 else:
                     st.write(f'<div style="display:flex;align-items:center;justify-content:flex-end;"><div style="background-color:lightgray;border-radius:12px;padding:8px 12px;margin-left:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
                     st.write("")
-            
-            # gTTS 를 활용하여 음성 파일 생성 및 재생
-            TTS(response)
-        # else: 이 부분은 삭제하거나 로직을 변경하여, 녹음이 없거나 유효하지 않을 때도 채팅 기록을 표시하도록 할 수 있습니다.
-        # 현재 코드에서는 녹음이 없으면 우측 컬럼에 아무것도 표시되지 않습니다.
+                    # 봇의 답변이 표시될 때만 TTS 실행
+                    TTS(message) # 여기서는 현재 메시지(봇의 답변)를 TTS로 사용
 
 if __name__=="__main__":
     main()
