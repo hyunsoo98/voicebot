@@ -1,5 +1,5 @@
 import streamlit as st
-import streamlit_audiorecorder as audiorecorder
+from streamlit_audiorecorder import audiorecorder
 import openai
 import os
 from datetime import datetime
