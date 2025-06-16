@@ -1,7 +1,6 @@
 import streamlit as st
 
-#audiorecorder 패키지 추가
-from audiorecorder import audiorecorder
+from streamlit_audiorecorder import st_audiorec
 import openai
 import os
 from datetime import datetime
