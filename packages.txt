@@ -1,1 +1,7 @@
+build-essential
+python3-dev
+libblas-dev
+liblapack-dev
+gfortran
+portaudio19-dev
 ffmpeg
