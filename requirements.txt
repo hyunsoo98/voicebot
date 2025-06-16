@@ -63,7 +63,6 @@ grpcio-status==1.72.0rc1
 gTTS==2.5.4
 h11
 h5py==3.13.0
-htmlmin
 httpcore
 httpx
 huggingface-hub==0.33.0
