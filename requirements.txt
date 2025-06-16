@@ -2,5 +2,5 @@ streamlit
 openai
 gTTS
 pydub==0.25.1
-audiorecorder==0.1
+audiorecorder
 pyaudioop
