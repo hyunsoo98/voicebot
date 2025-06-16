@@ -1,5 +1,5 @@
 streamlit
 openai>=1.0.0
-audiorecorder
 gtts
 pydub
+git+https://github.com/stefanrmmr/streamlit-audiorecorder
