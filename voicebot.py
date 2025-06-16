@@ -67,6 +67,10 @@ def main():
 
     if "check_reset" not in st.session_state:
         st.session_state["check_reset"] = False
+    
+    # 새로운 세션 상태 추가
+    if "last_audio_processed" not in st.session_state:
+        st.session_state["last_audio_processed"] = False
 
     # 제목
     st.header("음성 비서 프로그램")
@@ -105,7 +109,8 @@ def main():
             st.session_state["chat"] = []
             st.session_state["messages"] = [{"role": "system", "content": "You are a thoughtful assistant. Respond to all input in 25 words and answer in korea"}]
             st.session_state["check_reset"] = True # 리셋 버튼 클릭 시 True로 설정
-            st.rerun() # 상태를 즉시 반영하기 위해 rerum
+            st.session_state["last_audio_processed"] = False # 마지막 오디오 처리 상태 초기화
+            st.rerun() # 상태를 즉시 반영하기 위해 rerun
 
     # 기능 구현 공간
     col1, col2 = st.columns(2)
@@ -115,8 +120,9 @@ def main():
         # 음성 녹음 아이콘 추가
         audio = audiorecorder("클릭하여 녹음하기", "녹음중...")
 
-        # 리셋 버튼이 눌리지 않았고, audio 객체가 유효하며 녹음 길이가 0보다 클 때만 처리
-        if audio and len(audio) > 0 and not st.session_state["check_reset"]:
+        # 리셋 버튼이 눌리지 않았고, audio 객체가 존재하며, 녹음 길이가 0보다 클 때만 처리
+        # audiorecorder 객체의 duration_seconds 속성을 사용하여 빈 녹음 확인
+        if audio is not None and audio.duration_seconds > 0 and not st.session_state["check_reset"]:
             # 음성 재생
             st.audio(audio.export().read())
             # 음원 파일에서 텍스트 추출
@@ -142,7 +148,6 @@ def main():
         # 채팅 기록이 있을 때만 시각화
         if st.session_state["chat"]:
             # 마지막 질문이 사용자 질문이고, 아직 답변이 없으며, 마지막 오디오가 처리되었다면 답변 생성
-            # audio 객체의 유효성은 이미 col1에서 확인했으므로, 여기서는 세션 상태에 의존
             if st.session_state["last_audio_processed"] and st.session_state["chat"][-1][0] == "user":
                 with st.spinner("GPT가 답변을 생성중입니다..."):
                     # ChatGPT에게 답변 얻기
@@ -167,8 +172,9 @@ def main():
                 else:
                     st.write(f'<div style="display:flex;align-items:center;justify-content:flex-end;"><div style="background-color:lightgray;border-radius:12px;padding:8px 12px;margin-left:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
                     st.write("")
-                    # 봇의 답변이 표시될 때만 TTS 실행
-                    TTS(message) # 여기서는 현재 메시지(봇의 답변)를 TTS로 사용
+                    # 봇의 답변이 표시될 때만 TTS 실행 (마지막 메시지가 봇의 메시지인 경우에만 재생)
+                    if st.session_state["chat"][-1] == (sender, time, message): # 현재 표시되는 메시지가 가장 최근 봇 응답일 때만 재생
+                         TTS(message)
 
 if __name__=="__main__":
     main()
