@@ -1,5 +1,5 @@
 import streamlit as st
-from st_audiorec import st_audiorec  # 수정된 패키지
+from st_audiorec import st_audiorec
 import openai
 import os
 from datetime import datetime
@@ -14,10 +14,10 @@ def STT(audio, apikey):
     audio.export(filename, format="mp3")
     with open(filename, "rb") as audio_file:
         client = openai.OpenAI(api_key=apikey)
-        respons = client.audio.transcriptions.create(
+        response = client.audio.transcriptions.create(
             model="whisper-1", file=audio_file)
     os.remove(filename)
-    return respons.text
+    return response.text
 
 def ask_gpt(prompt, model, apikey):
     client = openai.OpenAI(api_key=apikey)
@@ -43,39 +43,30 @@ def TTS(response):
 
 ###### 메인 함수 ######
 def main():
-    st.set_page_config(
-        page_title="음성 비서 프로그램",
-        layout="wide"
-    )
-
+    st.set_page_config(page_title="음성 비서 프로그램", layout="wide")
     st.header("음성 비서 프로그램")
     st.markdown("---")
 
     with st.expander("음성비서 프로그램에 관하여", expanded=True):
         st.write("""
-- 음성 비서 프로그램의 UI는 스트림릿을 활용했습니다.
-- STT는 OpenAI Whisper AI를 활용했습니다.
-- 답변은 OpenAI의 GPT 모델을 사용합니다.
-- TTS는 Google TTS를 사용합니다.
+- UI: Streamlit
+- STT: OpenAI Whisper
+- GPT 응답: ChatGPT
+- TTS: Google TTS 사용
         """)
 
-    # session state 초기화
     if "chat" not in st.session_state:
         st.session_state["chat"] = []
-
     if "OPENAI_API" not in st.session_state:
         st.session_state["OPENAI_API"] = ""
-
     if "messages" not in st.session_state:
         st.session_state["messages"] = [{
             "role": "system",
             "content": "You are a thoughtful assistant. Respond to all input in 25 words and answer in korea"
         }]
-
     if "check_reset" not in st.session_state:
         st.session_state["check_reset"] = False
 
-    # 사이드바 생성
     with st.sidebar:
         st.session_state["OPENAI_API"] = st.text_input(
             label="OPENAI API 키", placeholder="Enter Your API Key", value="", type="password")
@@ -96,21 +87,19 @@ def main():
     with col1:
         st.subheader("질문하기")
         audio_bytes = st_audiorec()
-
         if audio_bytes and not st.session_state["check_reset"]:
             st.audio(audio_bytes, format="audio/wav")
-
-            # bytes -> AudioSegment 변환
             audio = AudioSegment.from_file(BytesIO(audio_bytes), format="wav")
-            question = STT(audio, st.session_state['OPENAI_API'])
+            question = STT(audio, st.session_state["OPENAI_API"])
             now = datetime.now().strftime("%H:%M")
-            st.session_state['chat'].append(("user", now, question))
-            st.session_state['messages'].append({"role": "user", "content": question})
+            st.session_state["chat"].append(("user", now, question))
+            st.session_state["messages"].append({"role": "user", "content": question})
 
     with col2:
         st.subheader("질문/답변")
         if audio_bytes and not st.session_state["check_reset"]:
-            response = ask_gpt(st.session_state["messages"], model, st.session_state["OPENAI_API"])
+            response = ask_gpt(
+                st.session_state["messages"], model, st.session_state["OPENAI_API"])
             st.session_state["messages"].append({"role": "system", "content": response})
             now = datetime.now().strftime("%H:%M")
             st.session_state["chat"].append(("bot", now, response))
