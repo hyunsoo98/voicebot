@@ -2,3 +2,4 @@ streamlit
 audiorecorder-streamlit
 openai
 gtts
+pydub
